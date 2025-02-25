@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# Проверка параметров
+if [ "$#" -ne 3 ]; then
+    echo "Использование: $0 <папка> <максимальная_ширина> <расширения>"
+    echo "Пример: $0 /path/to/folder 800 'jpg png jpeg'"
+    exit 1
+fi
+
+FOLDER="$1"
+MAX_WIDTH="$2"
+EXTENSIONS="$3"
+
+# Перебор изображений в папке
+for file in "$FOLDER"/*; do
+    # Проверка, является ли файл изображением с нужным расширением
+    if [[ "$file" =~ \.($EXTENSIONS)$ ]]; then
+        # Получение текущей ширины изображения
+        CURRENT_WIDTH=$(identify -format "%w" "$file")
+        
+        # Проверка, нужно ли изменять размер
+        if [ "$CURRENT_WIDTH" -gt "$MAX_WIDTH" ]; then
+            # Получение веса исходного изображения
+            ORIGINAL_SIZE=$(du -b "$file" | cut -f1)
+            
+            # Изменение размера изображения
+            magick convert -resize "${MAX_WIDTH}x" "$file" "$file"
+            
+            # Получение веса измененного изображения
+            NEW_SIZE=$(du -b "$file" | cut -f1)
+            
+            echo "Изменен размер файла: $file"
+            echo "Исходный размер: ${ORIGINAL_SIZE} байт"
+            echo "Новый размер: ${NEW_SIZE} байт"
+            echo "Сжатие: $(( (ORIGINAL_SIZE - NEW_SIZE) * 100 / ORIGINAL_SIZE ))%"
+            echo "------------------------"
+        fi
+    fi
+done
